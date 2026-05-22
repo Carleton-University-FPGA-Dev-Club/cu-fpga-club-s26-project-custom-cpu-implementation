@@ -1,0 +1,9 @@
+*.jou
+*.log
+*.str
+*.bit
+*.ltx
+.Xil/
+vivado_project/
+__pycache__/
+*.pyc
