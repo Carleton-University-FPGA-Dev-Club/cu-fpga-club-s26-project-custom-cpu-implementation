@@ -1,35 +1,41 @@
 module i2s_receiver (
-    input logic bclk, // bit clock
-    input logic lrclk, // left-right clock
-    input logic sdata, // serial data
-    output logic [23:0] left_data, // left channel data
-    output logic [23:0] right_data, // right channel data
-    output logic left_valid, // left channel valid
-    output logic right_valid // right channel valid
+    input  logic        bclk,
+    input  logic        lrclk,
+    input  logic        sdata,
+    output logic [23:0] left_data,
+    output logic [23:0] right_data,
+    output logic        left_valid,
+    output logic        right_valid
 );
-logic lrclk_prev;
-logic [4:0] bit_count;
-logic [23:0] shift_reg;
 
-always_ff @(negedge bclk) begin
-    shift_reg <= {shift_reg[22:0], sdata};
-    bit_count <= bit_count + 1;
-    lrck_prev <= lrck; 
-end
+    logic [23:0] shift_reg;
+    logic [4:0]  bit_count;
+    logic        lrclk_prev;
 
-always_ff @( negedge bclk ) begin
-    left_valid <= 0;
-    right_valid <= 0;
-    if (lrclk != lrclk_prev) begin
-        bit_count <= 0;
-        if (lrclk == 1) begin
-            left_data <= shift_reg;
-            left_valid <= 1;
-        end
-        else begin
-            right_data <= shift_reg;
-            right_valid <= 1;
+    // block 1 — shift register and lrclk edge detection
+    always_ff @(negedge bclk) begin
+        shift_reg  <= {shift_reg[22:0], sdata};
+        lrclk_prev <= lrclk;
+    end
+
+    // block 2 — output latching and bit counter
+    always_ff @(negedge bclk) begin
+        left_valid  <= 1'b0;
+        right_valid <= 1'b0;
+
+        if (lrclk_prev != lrclk) begin
+            bit_count <= 5'b0;          // reset on channel change
+
+            if (lrclk == 1'b1) begin
+                left_data  <= shift_reg;
+                left_valid <= 1'b1;
+            end else begin
+                right_data  <= shift_reg;
+                right_valid <= 1'b1;
+            end
+        end else begin
+            bit_count <= bit_count + 1; // increment in same block
         end
     end
-end
-    
+
+endmodule
